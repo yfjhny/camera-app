@@ -7,49 +7,50 @@
 <body>
   <h2>2秒録画テスト（iPhone対応）</h2>
 
-  <video id="camera" autoplay playsinline width="300"></video><br><br>
+  <video id="camera" autoplay playsinline muted width="300"></video><br><br>
   <button id="recordBtn">2秒だけ録画する</button><br><br>
   <video id="recorded" controls width="300"></video>
 
   <script>
-    (() => {
-      const camera = document.getElementById('camera');
-      const recorded = document.getElementById('recorded');
-      const recordBtn = document.getElementById('recordBtn');
+    let mediaRecorder;
+    let recordedChunks = [];
 
-      let mediaRecorder;
-      let recordedChunks = [];
+    const camera = document.getElementById('camera');
+    const recorded = document.getElementById('recorded');
+    const recordBtn = document.getElementById('recordBtn');
 
-      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          camera.srcObject = stream;
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        camera.srcObject = stream;
+
+        recordBtn.onclick = () => {
+          recordedChunks = [];
           mediaRecorder = new MediaRecorder(stream);
 
-          mediaRecorder.ondataavailable = function(e) {
+          mediaRecorder.ondataavailable = e => {
             if (e.data.size > 0) {
               recordedChunks.push(e.data);
             }
           };
 
-          mediaRecorder.onstop = function() {
+          mediaRecorder.onstop = () => {
             const blob = new Blob(recordedChunks, { type: "video/webm" });
             recorded.src = URL.createObjectURL(blob);
-            recordedChunks = [];
+            recorded.play();
           };
 
-          recordBtn.onclick = () => {
-            mediaRecorder.start();
-            recordBtn.disabled = true;
-            setTimeout(() => {
-              mediaRecorder.stop();
-              recordBtn.disabled = false;
-            }, 2000);
-          };
-        })
-        .catch(err => {
-          alert('カメラが使えません: ' + err);
-        });
-    })();
+          mediaRecorder.start();                      // 撮影スタート
+          recordBtn.disabled = true;
+
+          setTimeout(() => {
+            mediaRecorder.stop();                    // 2秒後に自動停止
+            recordBtn.disabled = false;
+          }, 2000); // 2秒間録画
+        };
+      })
+      .catch(err => {
+        alert('カメラが使えません: ' + err);
+      });
   </script>
 </body>
 </html>
